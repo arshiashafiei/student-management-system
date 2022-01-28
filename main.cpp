@@ -202,6 +202,8 @@ void admin_signup()
             delete[] admin_data;
         }
     }
+    FileManager file;
+    file.write(format(admin_object), "admin_info.txt");
     cout << "Successfully Registered!\n";
     delete[] all_admin_data;
     admin_dashboard();
