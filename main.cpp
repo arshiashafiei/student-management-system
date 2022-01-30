@@ -333,8 +333,6 @@ Student get_student_info(const string &line)
             student_info_array[count] += student_info_str[j];
         }
     }
-    cout << student_info_array[0] << '\n';
-    cout << student_info_array[4] << '\n';
     student_object.username = student_info_array[0];
     student_object.password = student_info_array[1];
     student_object.first_name = student_info_array[2];
