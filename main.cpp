@@ -78,13 +78,11 @@ void admin_signup();
 void login();
 void signup();
 bool is_user_authenticate(const string &, const string &);
-bool is_user_exist(const string &);
-string get_student_data(const string &);
+string get_student_line(const string &);
 int get_student_index(const string &);
 string format(const Student &);
 string format(const Lesson &);
 string format(const Admin &);
-string* split(const string &, char);
 int count_char(const string &, char);
 void admin_dashboard();
 void student_dashboard(const string &);
@@ -92,6 +90,9 @@ void show_grades(const string &);
 void list_students();
 void add_lesson(const string &);
 double average(const string &);
+Student get_student_info(const string &);
+Lesson* get_student_lessons(const string &);
+Admin get_admin_info(const string &);
 
 int main()
 {
@@ -144,7 +145,6 @@ void menu()
         signup();
     }
     if (command == "4") {
-        // exit
         exit(0);
     }
     menu();
@@ -152,26 +152,21 @@ void menu()
 
 void admin_login()
 {
-    Admin admin_object;
+    Admin admin_object_check;
     cout << "Please enter your username: ";
-    cin >> admin_object.username;
+    cin >> admin_object_check.username;
     cout << "Please enter your password: ";
-    cin >> admin_object.password;
+    cin >> admin_object_check.password;
     cout << repeater('\n', 60);
     FileManager fileManager_object;
     int number_of_lines;
     string* all_admin_data = fileManager_object.read_lines(number_of_lines, "admin_info.txt");
-    for (int i = 0; i < number_of_lines; i++)
-    {
-        string* admin_data = split(all_admin_data[i], ':');
-        if (admin_object.username == admin_data[0] && admin_object.password == admin_data[1]) {
-            delete[] admin_data;
+    for (int i = 0; i < number_of_lines; i++) {
+        Admin admin_object = get_admin_info(all_admin_data[i]);
+        if (admin_object_check.username == admin_object.username && admin_object_check.password == admin_object.password) {
             delete[] all_admin_data;
             cout << "Successfully logged in!\n";
             admin_dashboard();
-        }
-        else {
-            delete[] admin_data;
         }
     }
     cout << "Failed! Username or Password is wrong\n";
@@ -180,30 +175,25 @@ void admin_login()
 
 void admin_signup()
 {
-    Admin admin_object;
+    Admin admin_object_check;
     cout << "Please enter your username: ";
-    cin >> admin_object.username;
+    cin >> admin_object_check.username;
     cout << "Please enter your password: ";
-    cin >> admin_object.password;
+    cin >> admin_object_check.password;
     cout << repeater('\n', 60);
     FileManager fileManager_object;
     int number_of_lines;
     string* all_admin_data = fileManager_object.read_lines(number_of_lines, "admin_info.txt");
-    for (int i = 0; i < number_of_lines; i++)
-    {
-        string* admin_data = split(all_admin_data[i], ':');
-        if (admin_object.username == admin_data[0]) {
-            delete[] admin_data;
+    for (int i = 0; i < number_of_lines; i++) {
+        Admin admin_object = get_admin_info(all_admin_data[i]);
+        if (admin_object_check.username == admin_object.username) {
             delete[] all_admin_data;
             cout << "Failed! Username already exist\n";
             admin_dashboard();
         }
-        else {
-            delete[] admin_data;
-        }
     }
     FileManager file;
-    file.write(format(admin_object), "admin_info.txt");
+    file.write(format(admin_object_check), "admin_info.txt");
     cout << "Successfully Registered!\n";
     delete[] all_admin_data;
     admin_dashboard();
@@ -219,7 +209,7 @@ void login()
     cout << repeater('\n', 60);
     if (is_user_authenticate(student_object.username, student_object.password)) {
         cout << "Successfully logged in!\n";
-        student_dashboard(get_student_data(student_object.username));
+        student_dashboard(get_student_line(student_object.username));
     }
     cout << "Failed! Username or Password is wrong\n";
 }
@@ -227,7 +217,6 @@ void login()
 void signup()
 {
     Student student_object;
-    // get user data
     cout << "Please enter a username: ";
     cin >> student_object.username;
     cout << "Please enter a password: ";
@@ -237,8 +226,7 @@ void signup()
     cout << "Please enter your last name: ";
     cin >> student_object.last_name;
     cout << repeater('\n', 60);
-    // Check if user already exist if yes it will not be created
-    if (!is_user_exist(student_object.username)) {
+    if (get_student_index(student_object.username) == -1) {
         FileManager fileManager_object;
         fileManager_object.write(format(student_object), "student_info.txt");
         cout << "Successfully registered!\n";
@@ -253,63 +241,29 @@ bool is_user_authenticate(const string &username, const string &pass)
     FileManager fileManager_object;
     int number_of_lines;
     string* all_student_data = fileManager_object.read_lines(number_of_lines);
-    for (int i = 0; i < number_of_lines; i++)
-    {
-        string* student_data = split(all_student_data[i], '&');
-        string* credentials = split(student_data[0], ':');
-        if (username == credentials[0] && pass == credentials[1]) {
-            delete[] student_data;
-            delete[] credentials;
+    for (int i = 0; i < number_of_lines; i++) {
+        Student student_object = get_student_info(all_student_data[i]);
+        if (username == student_object.username && pass == student_object.password) {
             delete[] all_student_data;
             return true;
         }
-        delete[] student_data;
-        delete[] credentials;
     }
     delete[] all_student_data;
     return false;
 }
 
-bool is_user_exist(const string &username)
+string get_student_line(const string &username)
 {
     FileManager fileManager_object;
     int number_of_lines;
     string* all_student_data = fileManager_object.read_lines(number_of_lines);
-    for (int i = 0; i < number_of_lines; i++)
-    {
-        string* student_data = split(all_student_data[i], '&');
-        string* credentials = split(student_data[0], ':');
-        if (username == credentials[0]) {
-            delete[] student_data;
-            delete[] credentials;
-            delete[] all_student_data;
-            return true;
-        }
-        delete[] student_data;
-        delete[] credentials;
-    }
-    delete[] all_student_data;
-    return false;
-}
-
-string get_student_data(const string &username)
-{
-    FileManager fileManager_object;
-    int number_of_lines;
-    string* all_student_data = fileManager_object.read_lines(number_of_lines);
-    for (int i = 0; i < number_of_lines; i++)
-    {
-        string* student_data = split(all_student_data[i], '&');
-        string* credentials = split(student_data[0], ':');
-        if (username == credentials[0]) {
+    for (int i = 0; i < number_of_lines; i++) {
+        Student student_object = get_student_info(all_student_data[i]);
+        if (username == student_object.username) {
             string data = all_student_data[i];
-            delete[] student_data;
-            delete[] credentials;
             delete[] all_student_data;
             return data;
         }
-        delete[] student_data;
-        delete[] credentials;
     }
     delete[] all_student_data;
     return "Nothing Found";
@@ -320,18 +274,12 @@ int get_student_index(const string &username)
     FileManager fileManager_object;
     int number_of_lines;
     string* all_student_data = fileManager_object.read_lines(number_of_lines);
-    for (int i = 0; i < number_of_lines; i++)
-    {
-        string* student_data = split(all_student_data[i], '&');
-        string* credentials = split(student_data[0], ':');
-        if (username == credentials[0]) {
-            delete[] student_data;
-            delete[] credentials;
+    for (int i = 0; i < number_of_lines; i++) {
+        Student student_object = get_student_info(all_student_data[i]);
+        if (username == student_object.username) {
             delete[] all_student_data;
             return i;
         }
-        delete[] student_data;
-        delete[] credentials;
     }
     delete[] all_student_data;
     return -1;
@@ -361,21 +309,92 @@ string format(const Admin &admin_object)
     return result;
 }
 
-string* split(const string &line, char seperator)
+Student get_student_info(const string &line)
 {
+    Student student_object;
+    int size = count_char(line, '&');
+    string student_info_str;
+    for (int i = 0; i < line.length(); i++) {
+        if (line[i] != '&') {
+            student_info_str += line[i];
+        }
+        else {
+            break;
+        }
+    }
+    int length = student_info_str.length();
+    string student_info_array[5];
+    int count = 0;
+    for (int j = 0; j < length; j++) {
+        if (student_info_str[j] == ':') {
+            count++;
+        }
+        else {
+            student_info_array[count] += student_info_str[j];
+        }
+    }
+    cout << student_info_array[0] << '\n';
+    cout << student_info_array[4] << '\n';
+    student_object.username = student_info_array[0];
+    student_object.password = student_info_array[1];
+    student_object.first_name = student_info_array[2];
+    student_object.last_name = student_info_array[3];
+    student_object.avg = stod(student_info_array[4]);
+    return student_object;
+}
+
+Lesson* get_student_lessons(const string &line)
+{
+    int size = count_char(line, '&');
+    Lesson* lessons_array = new Lesson[size - 1];
     int counter = 0;
-    int size = count_char(line, seperator);
     int length = line.length();
-    string* result = new string[size + 1];
+    string result[size];
     for (int i = 0; i < length; i++) {
-        if (line[i] != seperator) {
+        if (line[i] != '&') {
             result[counter] += line[i];
         }
         else {
             counter++;
         }
     }
-    return result;   
+    
+    for (int j = 1; j < size; j++) {
+        int lesson_length = result[j].length();
+        string lesson_info_array[3];
+        int count = 0;
+        for (int i = 0; i < lesson_length; i++) {
+            if (result[j][i] == ':') {
+                count++;
+            }
+            else {
+                lesson_info_array[count] += result[j][i];
+            }
+        }
+        lessons_array[j - 1].name = lesson_info_array[0];
+        lessons_array[j - 1].unit = stoi(lesson_info_array[1]);
+        lessons_array[j - 1].grade = stod(lesson_info_array[2]);
+    }
+    return lessons_array;
+}
+
+Admin get_admin_info(const string &line)
+{
+    Admin admin_object;
+    int length = line.length();
+    string admin_info_array[2];
+    int count = 0;
+    for (int j = 0; j < length; j++) {
+        if (line[j] == ':') {
+            count++;
+        }
+        else {
+            admin_info_array[count] += line[j];
+        }
+    }
+    admin_object.username = admin_info_array[0];
+    admin_object.password = admin_info_array[1];
+    return admin_object;
 }
 
 int count_char(const string &line, char seperator)
@@ -417,8 +436,8 @@ void admin_dashboard()
         string username;
         cout << "Enter Student username: ";
         cin >> username;
-        if (is_user_exist(username)) {
-            show_grades(get_student_data(username));
+        if (get_student_index(username) != -1) {
+            show_grades(get_student_line(username));
         }
         else {
             cout << "Username Does not exist!\n";
@@ -428,7 +447,7 @@ void admin_dashboard()
         string username;
         cout << "Enter Student username: ";
         cin >> username;
-        if (is_user_exist(username)) {
+        if (get_student_index(username) != -1) {
             add_lesson(username);
         }
         else {
@@ -446,16 +465,13 @@ void admin_dashboard()
 
 void student_dashboard(const string &student_data_line)
 {
-    string* student_data = split(student_data_line, '&');
-    string* credentials = split(student_data[2], ':');
+    Student student_object = get_student_info(student_data_line);
     string command;
-    cout << "(!" << repeater('-') << "Welcome " << credentials[0] << repeater('-') << "!)\n"
+    cout << "(!" << repeater('-') << "Welcome " << student_object.first_name << repeater('-') << "!)\n"
          << "(1)  Show my lessons\n"
          << "(2)  Log out\n"
          << "(3)  Exit the program\n"
          << "Please enter a number from above: ";
-    delete[] student_data;
-    delete[] credentials;
     cin >> command;
     cout << repeater('\n', 60);
     if (command == "1") {
@@ -474,21 +490,18 @@ void student_dashboard(const string &student_data_line)
 void show_grades(const string &student_data_line)
 {
     string input;
-    string* splitted_data = split(student_data_line, '&');
-    string* credentials = split(splitted_data[0], ':');
-    int number_of_blocks = count_char(student_data_line, '&');
-    cout << "Username: " << credentials[0] << 
-            "\tPassword: " << credentials[1] <<
-            "\tName: " << credentials[2] << 
-            "\tSurname: " << credentials[3] <<
-            "\tAverage: " << credentials[4] << '\n';
-    for (int i = 1; i < number_of_blocks; i++) {
-        string* lesson_info = split(splitted_data[i], ':');
-        cout << "Lesson: " << lesson_info[0] << "\tUnits: " << lesson_info[1] << "\tGrade: " << lesson_info[2] << '\n';
-        delete[] lesson_info;
+    Student student_object = get_student_info(student_data_line);
+    Lesson* lessons_array = get_student_lessons(student_data_line);
+    int number_of_lessons = count_char(student_data_line, '&') - 1;
+    cout << "Username: " << student_object.username << 
+            "\tPassword: " << student_object.password <<
+            "\tName: " << student_object.first_name <<
+            "\tSurname: " << student_object.last_name <<
+            "\tAverage: " << student_object.avg << '\n';
+    for (int i = 0; i < number_of_lessons; i++) {
+        cout << "Lesson: " << lessons_array[i].name << "\tUnits: " << lessons_array[i].unit << "\tGrade: " << lessons_array[i].grade << '\n';
     }
-    delete[] credentials;
-    delete[] splitted_data;
+    delete[] lessons_array;
     cout << "Enter anything to return: ";
     cin >> input;
 }
@@ -499,12 +512,14 @@ void list_students()
     int size;
     FileManager file;
     string* all_student_data = file.read_lines(size);
+    cout << "Username\tPassword\tName\tFamily\tAverage\n";
     for (int i = 0; i < size; i++) {
-        string* student_data = split(all_student_data[i], '&');
-        string* credentials = split(student_data[0], ':');
-        cout << credentials[0] << ' ' << credentials[1] << ' ' << credentials[2] << ' ' << credentials[3] << ' ' << credentials[4] << '\n';
-        delete[] credentials;
-        delete[] student_data;
+        Student student_object = get_student_info(all_student_data[i]);
+        cout << student_object.username << '\t' <<
+                student_object.password << '\t' <<
+                student_object.first_name << '\t' <<
+                student_object.last_name << '\t' <<
+                student_object.avg << '\n';
     }
     delete[] all_student_data;
     cout << "Enter anything to return: ";
@@ -528,21 +543,19 @@ void add_lesson(const string &username)
     for (int i = 0; i < index; i++) {
         file.write(all_student_data[i], "temp.txt");
     }
-    Student student_object;
+    
     all_student_data[index] += lesson_string;
     double avg = average(all_student_data[index]);
     int number_of_lessons = count_char(all_student_data[index], '&') - 1;
-    string* splitted_data = split(all_student_data[index], '&');
-    string* credentials = split(splitted_data[0], ':');
-    student_object.username = credentials[0];
-    student_object.password = credentials[1];
-    student_object.first_name = credentials[2];
-    student_object.last_name = credentials[3];
+    Lesson* lesson_array = get_student_lessons(all_student_data[index]);
+    Student student_object = get_student_info(all_student_data[index]);
     student_object.avg = avg;
     all_student_data[index] = format(student_object);
-    for (int i = 1; i <= number_of_lessons; i++) {
-        all_student_data[index] += splitted_data[i] + '&';
+    for (int i = 0; i < number_of_lessons; i++) {
+        string lesson_string = format(lesson_array[i]);
+        all_student_data[index] += lesson_string;
     }
+    delete[] lesson_array;
     for (int j = index; j < size; j++) {
         file.write(all_student_data[j], "temp.txt");
     }
@@ -560,16 +573,16 @@ double average(const string &student_data)
 {
     double sum = 0;
     int all_units = 0;
-    string* splitted_data = split(student_data, '&');
+    // string* splitted_data = split(student_data, '&');
+    Lesson* lesson_array = get_student_lessons(student_data);
     int number_of_lessons = count_char(student_data, '&') - 1;
-    for (int i = 1; i <= number_of_lessons; i++) {
-        string* lesson_info = split(splitted_data[i], ':');
-        int unit = stoi(lesson_info[1]);
-        int grade = stod(lesson_info[2]);
+    for (int i = 0; i < number_of_lessons; i++) {
+        // string* lesson_info = split(splitted_data[i], ':');
+        int unit = lesson_array[i].unit;
+        int grade = lesson_array[i].grade;
         all_units += unit;
         sum += unit * grade;
-        delete[] lesson_info;
     }
-    delete[] splitted_data;
+    delete[] lesson_array;
     return sum / all_units;
 }
