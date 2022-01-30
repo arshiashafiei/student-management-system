@@ -573,11 +573,9 @@ double average(const string &student_data)
 {
     double sum = 0;
     int all_units = 0;
-    // string* splitted_data = split(student_data, '&');
     Lesson* lesson_array = get_student_lessons(student_data);
     int number_of_lessons = count_char(student_data, '&') - 1;
     for (int i = 0; i < number_of_lessons; i++) {
-        // string* lesson_info = split(splitted_data[i], ':');
         int unit = lesson_array[i].unit;
         int grade = lesson_array[i].grade;
         all_units += unit;
